@@ -1,5 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_demo_1/components/logo.dart';
+import 'package:firebase_demo_1/components/circular_images.dart';
 import 'package:firebase_demo_1/components/styled_form_fields.dart';
 import "package:firebase_demo_1/style_consonants.dart";
 import 'package:flutter/material.dart';
@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 class LoginPage extends StatelessWidget {
   LoginPage({super.key});
   final _formKey = GlobalKey<FormState>();
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(

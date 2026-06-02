@@ -1,7 +1,9 @@
+import 'package:firebase_demo_1/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_demo_1/login.dart';
 import 'package:firebase_demo_1/routes.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,6 +15,7 @@ class MainApp extends StatelessWidget {
   const MainApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: LoginPage(), routes: routes, );
+    return MaterialApp(home: LoginPage(), routes: routes);
   }
 }
+
