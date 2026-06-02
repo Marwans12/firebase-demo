@@ -5,14 +5,25 @@ final _formFieldRadius = 25.0;
 final _hintStyle = TextStyle(fontSize: 14);
 
 class StyledTextFormField extends StatelessWidget {
-  const StyledTextFormField({super.key, required this.hintText});
+  const StyledTextFormField({
+    super.key,
+    required this.hintText,
+    this.isObsecureText = false,
+    this.suffixIcon,
+    this.validator,
+  });
   final String hintText;
+  final bool isObsecureText;
+  final Widget? suffixIcon;
+  final FormFieldValidator<String?>? validator;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(bottom: 18),
       child: TextFormField(
+        validator: validator,
+        obscureText: isObsecureText,
         decoration: InputDecoration(
           hintStyle: _hintStyle,
           filled: true,
@@ -22,6 +33,7 @@ class StyledTextFormField extends StatelessWidget {
             borderRadius: BorderRadius.circular(_formFieldRadius),
             borderSide: BorderSide.none,
           ),
+          suffixIcon: suffixIcon,
         ),
       ),
     );
@@ -29,9 +41,13 @@ class StyledTextFormField extends StatelessWidget {
 }
 
 class StyledObsecureTextFormField extends StatefulWidget {
-  const StyledObsecureTextFormField({super.key, required this.hintText, this.validator = null});
+  const StyledObsecureTextFormField({
+    super.key,
+    required this.hintText,
+    this.validator,
+  });
   final String hintText;
-  final String? Function(String?)? validator;
+  final FormFieldValidator? validator;
 
   @override
   State<StyledObsecureTextFormField> createState() =>
@@ -40,38 +56,25 @@ class StyledObsecureTextFormField extends StatefulWidget {
 
 class _StyledObsecureTextFormFieldState
     extends State<StyledObsecureTextFormField> {
-  var isVisible = false;
+  var isObsecured = true;
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 18),
-      child: TextFormField(
-        obscureText: !isVisible,
-        decoration: InputDecoration(
-          hintStyle: _hintStyle,
-          filled: true,
-          fillColor: _formFieldFillColor,
-          hintText: widget.hintText,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(_formFieldRadius),
-            borderSide: BorderSide.none,
-          ),
-          suffixIcon: IconButton(onPressed: () => setState(() {
-            isVisible = !isVisible;
-          }),icon: Icon(
-            isVisible? Icons.visibility_off : Icons.visibility)
-            ,),
-        ),
+    return StyledTextFormField(
+      hintText: widget.hintText,
+      isObsecureText: isObsecured,
+      validator: widget.validator,
+      suffixIcon: IconButton(
+        onPressed: () => setState(() {
+          isObsecured = !isObsecured;
+        }),
+        icon: Icon(isObsecured ? Icons.visibility : Icons.visibility_off),
       ),
     );
   }
 }
 
 class FormFieldLabel extends StatelessWidget {
-  const FormFieldLabel(this.text ,{
-    super.key, this.style, this.textAlign,
-
-  });
+  const FormFieldLabel(this.text, {super.key, this.style, this.textAlign});
   final String text;
   final TextStyle? style;
   final TextAlign? textAlign;
@@ -80,7 +83,10 @@ class FormFieldLabel extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(4),
       width: double.infinity,
-      child: DefaultTextStyle.merge(style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),child: Text(text, textAlign: textAlign, style: style,)),
+      child: DefaultTextStyle.merge(
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        child: Text(text, textAlign: textAlign, style: style),
+      ),
     );
   }
 }
