@@ -3,9 +3,10 @@ import 'package:firebase_demo_1/login.dart';
 import 'package:firebase_demo_1/register.dart';
 
 final routes = {
-  "HomePage": (_) => HomePage(),
-  "Login": (_) => LoginPage(),
-  "Register": (_) => RegisterPage(),
+  "/homepage": (_) => HomePage(),
+  "/login": (_) => LoginPage(),
+  "/register": (_) => RegisterPage(),
+  // "/passwordrecovery": 
 };
 
 

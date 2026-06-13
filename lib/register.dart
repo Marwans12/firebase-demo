@@ -1,12 +1,39 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 import 'components/circular_images.dart';
 import 'components/styled_form_fields.dart';
 import 'style_consonants.dart';
 
-class RegisterPage extends StatelessWidget {
-  RegisterPage({super.key});
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
+
+  @override
+  State<RegisterPage> createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+  final auth = FirebaseAuth.instance;
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final passwordConfirmationController = TextEditingController();
+
+  String? checkEmpty(String? value) {
+    if (value == null || value.isEmpty) {
+      return "Should not be empty";
+    }
+    return null;
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordConfirmationController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,25 +55,61 @@ class RegisterPage extends StatelessWidget {
                     style: TextStyle(fontSize: 14, color: Colors.black45),
                   ),
                   FormFieldLabel("Username"),
-                  StyledTextFormField(hintText: "Enter your name"),
+                  StyledTextFormField(
+                    hintText: "Enter your name",
+                    controller: nameController,
+                    validator: checkEmpty,
+                  ),
                   FormFieldLabel("Email"),
-                  StyledTextFormField(hintText: "Enter your mail"),
+                  StyledTextFormField(
+                    hintText: "Enter your mail",
+                    controller: emailController,
+                    validator: checkEmpty,
+                  ),
                   FormFieldLabel("Password"),
-                  StyledObsecureTextFormField(hintText: "Password"),
+                  StyledObsecureTextFormField(
+                    hintText: "Password",
+                    controller: passwordController,
+                    validator: checkEmpty,
+                  ),
                   FormFieldLabel("Confirm password"),
-                  StyledObsecureTextFormField(hintText: "Enter your password"),
+                  StyledObsecureTextFormField(
+                    hintText: "Enter your password",
+                    controller: passwordConfirmationController,
+                    validator: (confPassword) {
+                      if (confPassword != passwordController.text) {
+                        return "Password not match";
+                      }
+                      return null;
+                    },
+                  ),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
                       style: ButtonStyle(
                         backgroundColor: WidgetStateProperty.all(Colors.blue),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         assert(_formKey.currentState != null);
                         if (_formKey.currentState!.validate()) {
-                          Navigator.of(
-                            context,
-                          ).pushReplacementNamed("HomePage");
+                          try {
+                            await auth.createUserWithEmailAndPassword(
+                              email: emailController.text,
+                              password: passwordController.text,
+                            );
+                            auth.currentUser!.sendEmailVerification();
+                            if (context.mounted) {
+                              Navigator.of(
+                                context,
+                              ).pushReplacementNamed("/homepage");
+                            }
+                          } on FirebaseException catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(
+                                context,
+                              ).showSnackBar(SnackBar(content: Text(e.code)));
+                            }
+                          }
                         }
                       },
                       child: Padding(
@@ -65,9 +128,7 @@ class RegisterPage extends StatelessWidget {
                           ),
                         ),
                         onPressed: () {
-                          Navigator.of(
-                            context,
-                          ).pushReplacementNamed("Login");
+                          Navigator.of(context).pushReplacementNamed("/login");
                         },
                         child: Text(
                           "login instead.",

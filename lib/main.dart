@@ -15,7 +15,7 @@ class MainApp extends StatelessWidget {
   const MainApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: LoginPage(), routes: routes);
+    return MaterialApp(home: FirebaseAuth.instance.currentUser == null ? LoginPage() : HomePage(), routes: routes);
   }
 }
 

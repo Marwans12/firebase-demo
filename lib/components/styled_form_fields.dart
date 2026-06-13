@@ -11,7 +11,9 @@ class StyledTextFormField extends StatelessWidget {
     this.isObsecureText = false,
     this.suffixIcon,
     this.validator,
+    required this.controller
   });
+  final TextEditingController controller;
   final String hintText;
   final bool isObsecureText;
   final Widget? suffixIcon;
@@ -22,6 +24,7 @@ class StyledTextFormField extends StatelessWidget {
     return Container(
       margin: EdgeInsets.only(bottom: 18),
       child: TextFormField(
+        controller: controller,
         validator: validator,
         obscureText: isObsecureText,
         decoration: InputDecoration(
@@ -44,10 +47,13 @@ class StyledObsecureTextFormField extends StatefulWidget {
   const StyledObsecureTextFormField({
     super.key,
     required this.hintText,
+    required this.controller,
     this.validator,
+
   });
+  final TextEditingController controller;
   final String hintText;
-  final FormFieldValidator? validator;
+  final FormFieldValidator<String?>? validator;
 
   @override
   State<StyledObsecureTextFormField> createState() =>
@@ -60,6 +66,7 @@ class _StyledObsecureTextFormFieldState
   @override
   Widget build(BuildContext context) {
     return StyledTextFormField(
+      controller: widget.controller,
       hintText: widget.hintText,
       isObsecureText: isObsecured,
       validator: widget.validator,

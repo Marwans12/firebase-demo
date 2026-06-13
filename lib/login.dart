@@ -4,10 +4,26 @@ import 'package:firebase_demo_1/components/styled_form_fields.dart';
 import "package:firebase_demo_1/style_consonants.dart";
 import 'package:flutter/material.dart';
 
-class LoginPage extends StatelessWidget {
-  LoginPage({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final auth = FirebaseAuth.instance;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,12 +38,21 @@ class LoginPage extends StatelessWidget {
               child: Column(
                 children: [
                   Logo(),
-                  FormFieldLabel("Login", style: TextStyle(fontSize: 22),),
-                  FormFieldLabel("Login to continue using the app", style: TextStyle(fontSize: 14, color: Colors.black45),),
+                  FormFieldLabel("Login", style: TextStyle(fontSize: 22)),
+                  FormFieldLabel(
+                    "Login to continue using the app",
+                    style: TextStyle(fontSize: 14, color: Colors.black45),
+                  ),
                   FormFieldLabel("Email"),
-                  StyledTextFormField(hintText: "Enter your Email"),
+                  StyledTextFormField(
+                    hintText: "Enter your Email",
+                    controller: emailController,
+                  ),
                   FormFieldLabel("Password"),
-                  StyledObsecureTextFormField(hintText: "Enter your Password"),
+                  StyledObsecureTextFormField(
+                    hintText: "Enter your Password",
+                    controller: passwordController,
+                  ),
                   Transform.translate(
                     offset: Offset(0, -20),
                     child: Container(
@@ -36,11 +61,14 @@ class LoginPage extends StatelessWidget {
                         onPressed: () {
                           Navigator.of(
                             context,
-                          ).pushReplacementNamed("Recovery");
+                          ).pushReplacementNamed("/passwordrecovery");
                         },
                         child: Text(
                           "Forgot Password?",
-                          style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w900),
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontWeight: FontWeight.w900,
+                          ),
                           textAlign: TextAlign.right,
                         ),
                       ),
@@ -52,12 +80,26 @@ class LoginPage extends StatelessWidget {
                       style: ButtonStyle(
                         backgroundColor: WidgetStateProperty.all(Colors.blue),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         assert(_formKey.currentState != null);
                         if (_formKey.currentState!.validate()) {
-                          Navigator.of(
-                            context,
-                          ).pushReplacementNamed("HomePage");
+                          try {
+                            await auth.signInWithEmailAndPassword(
+                              email: emailController.text,
+                              password: passwordController.text,
+                            );
+                            if (context.mounted) {
+                              Navigator.of(
+                                context,
+                              ).pushReplacementNamed("/homepage");
+                            }
+                          } on FirebaseAuthException catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(
+                                context,
+                              ).showSnackBar(SnackBar(content: Text(e.code)));
+                            }
+                          }
                         }
                       },
                       child: Padding(
@@ -98,7 +140,7 @@ class LoginPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  SizedBox(height: 28,),
+                  SizedBox(height: 28),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -115,7 +157,7 @@ class LoginPage extends StatelessWidget {
                         onPressed: () {
                           Navigator.of(
                             context,
-                          ).pushReplacementNamed("Register");
+                          ).pushReplacementNamed("/register");
                         },
                         child: Text(
                           "Register",
