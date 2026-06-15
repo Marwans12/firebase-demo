@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'components/circular_images.dart';
-import 'components/styled_form_fields.dart';
+import 'components/components.dart';
 import 'style_consonants.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -118,27 +117,22 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     ),
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TextButton(
-                        style: ButtonStyle(
-                          padding: WidgetStatePropertyAll(
-                            EdgeInsetsGeometry.all(0),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pushReplacementNamed("/login");
-                        },
-                        child: Text(
-                          "login instead.",
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
+                  TextButton(
+                    style: ButtonStyle(
+                      padding: WidgetStatePropertyAll(
+                        EdgeInsetsGeometry.all(0),
                       ),
-                    ],
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pushReplacementNamed("/login");
+                    },
+                    child: Text(
+                      "login instead.",
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ],
               ),

@@ -6,7 +6,6 @@ final routes = {
   "/homepage": (_) => HomePage(),
   "/login": (_) => LoginPage(),
   "/register": (_) => RegisterPage(),
-  // "/passwordrecovery": 
 };
 
 

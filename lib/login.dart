@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_demo_1/components/circular_images.dart';
-import 'package:firebase_demo_1/components/styled_form_fields.dart';
+import 'package:firebase_demo_1/components/components.dart';
 import "package:firebase_demo_1/style_consonants.dart";
 import 'package:flutter/material.dart';
 
@@ -74,39 +73,30 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all(Colors.blue),
-                      ),
-                      onPressed: () async {
-                        assert(_formKey.currentState != null);
-                        if (_formKey.currentState!.validate()) {
-                          try {
-                            await auth.signInWithEmailAndPassword(
-                              email: emailController.text,
-                              password: passwordController.text,
-                            );
-                            if (context.mounted) {
-                              Navigator.of(
-                                context,
-                              ).pushReplacementNamed("/homepage");
-                            }
-                          } on FirebaseAuthException catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(SnackBar(content: Text(e.code)));
-                            }
+                  StyledFilledButton(
+                    onPressed: () async {
+                      assert(_formKey.currentState != null);
+                      if (_formKey.currentState!.validate()) {
+                        try {
+                          await auth.signInWithEmailAndPassword(
+                            email: emailController.text,
+                            password: passwordController.text,
+                          );
+                          if (context.mounted) {
+                            Navigator.of(
+                              context,
+                            ).pushReplacementNamed("/homepage");
+                          }
+                        } on FirebaseAuthException catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(
+                              context,
+                            ).showSnackBar(SnackBar(content: Text(e.code)));
                           }
                         }
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text("Login"),
-                      ),
-                    ),
+                      }
+                    },
+                    child: Text("Login"),
                   ),
                   SizedBox(height: 30),
                   Text("Or login with"),
@@ -178,3 +168,5 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
+
+

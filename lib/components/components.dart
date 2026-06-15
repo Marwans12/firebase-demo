@@ -11,7 +11,7 @@ class StyledTextFormField extends StatelessWidget {
     this.isObsecureText = false,
     this.suffixIcon,
     this.validator,
-    required this.controller
+    required this.controller,
   });
   final TextEditingController controller;
   final String hintText;
@@ -49,7 +49,6 @@ class StyledObsecureTextFormField extends StatefulWidget {
     required this.hintText,
     required this.controller,
     this.validator,
-
   });
   final TextEditingController controller;
   final String hintText;
@@ -94,6 +93,85 @@ class FormFieldLabel extends StatelessWidget {
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         child: Text(text, textAlign: textAlign, style: style),
       ),
+    );
+  }
+}
+
+class StyledFilledButton extends StatelessWidget {
+  const StyledFilledButton({super.key, this.onPressed, this.child});
+  final VoidCallback? onPressed;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton(
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.all(Colors.blue),
+        ),
+        onPressed: onPressed,
+        child: Padding(padding: const EdgeInsets.all(16.0), child: child),
+      ),
+    );
+  }
+}
+
+class Logo extends StatelessWidget {
+  const Logo({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return CircularImage(imagePath: "assets/logo.png");
+  }
+}
+
+class CircularImage extends StatelessWidget {
+  const CircularImage({
+    super.key,
+    this.height = 100,
+    this.width = 100,
+    this.color,
+    required this.imagePath,
+  });
+
+  final double height;
+  final double width;
+  final Color? color;
+  final String imagePath;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      width: width,
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(150),
+        color: color ?? Colors.grey.shade100,
+      ),
+      child: Image.asset(imagePath),
+    );
+  }
+}
+
+class DefaultCircleAvatar extends StatelessWidget {
+  const DefaultCircleAvatar({
+    super.key,
+    this.imageUrl,
+    this.radius,
+    this.backgroundColor,
+  });
+  final String? imageUrl;
+  final Color? backgroundColor;
+  final double? radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      foregroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
+      backgroundImage: Image.asset("assets/default_profile_image.png").image,
+      backgroundColor: backgroundColor ?? Colors.grey.shade200,
+      radius: radius,
     );
   }
 }
