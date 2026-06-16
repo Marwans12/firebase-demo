@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_demo_1/components/components.dart';
 import "package:firebase_demo_1/style_consonants.dart";
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -113,7 +114,26 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       MaterialButton(
-                        onPressed: () {},
+                        onPressed: () async {
+                          var showSnackBar = ScaffoldMessenger.of(context).showSnackBar;
+                          String? errorCode;
+                          try {
+                          var googleAccount =  await GoogleSignIn.instance.authenticate();
+                          var googleAuth = googleAccount.authentication;
+                          var googleCredential = GoogleAuthProvider.credential(idToken: googleAuth.idToken);
+                          await auth.signInWithCredential(googleCredential);
+                          if (context.mounted) {
+                            Navigator.of(context).pushReplacementNamed("/homepage");
+                          }
+                          } on GoogleSignInException catch (e) {
+                            errorCode = "google: ${e.description}";
+                          } on FirebaseException catch (e) {
+                            errorCode = "firebase: ${e.code}";
+                          }
+                          if (errorCode != null && context.mounted) {
+                            showSnackBar(SnackBar(content: Text(errorCode)));
+                          }
+                        },
                         child: Image.asset(
                           "assets/google_logo.png",
                           height: 50,
