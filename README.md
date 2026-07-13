@@ -1,3 +1,2 @@
-# firebase_demo_1
-
-A new Flutter project.
+# firebase-demo
+A demo application for the use of Firebase. Demonstrating Firebase Authentication, Firebase Firestore and using Streams in Flutter. 
