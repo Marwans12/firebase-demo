@@ -154,8 +154,8 @@ class CircularImage extends StatelessWidget {
   }
 }
 
-class DefaultCircleAvatar extends StatelessWidget {
-  const DefaultCircleAvatar({
+class StyledCircleAvatar extends StatelessWidget {
+  const StyledCircleAvatar({
     super.key,
     this.imageUrl,
     this.radius,
