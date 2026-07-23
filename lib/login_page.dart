@@ -28,33 +28,33 @@ class _LoginPageState extends State<LoginPage> {
     var theme = Theme.of(context);
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        padding: const .symmetric(horizontal: 20.0),
         child: Center(
           child: SingleChildScrollView(
             child: Form(
               key: formKey,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: .stretch,
                 spacing: 20,
                 children: [
                   CircleAssetImage(
                     size: 100,
                     name: "assets/logo.png",
-                    padding: EdgeInsets.all(5),
+                    padding: .all(5),
                     backgroundColor: const Color.fromARGB(255, 231, 231, 231),
                   ),
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: .stretch,
                     children: [
-                      Text("Login", style: theme.textTheme.titleLarge),
+                      Text("Sign In", style: theme.textTheme.titleLarge),
                       Text(
-                        "Login To Continue Using This App",
+                        "Sign in to continue using this app",
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
                   ),
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: .stretch,
                     children: [
                       Text("Email", style: theme.textTheme.labelMedium),
                       SizedBox(height: 10),
@@ -68,7 +68,7 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: .stretch,
                     children: [
                       Text("Password", style: theme.textTheme.labelMedium),
                       SizedBox(height: 10),
@@ -80,7 +80,7 @@ class _LoginPageState extends State<LoginPage> {
                         validator: Validators.passwordValidator,
                       ),
                       Align(
-                        alignment: Alignment.centerRight,
+                        alignment: .centerRight,
                         child: TextButton(
                           onPressed: () {
                             showDialog(
@@ -141,12 +141,12 @@ class _LoginPageState extends State<LoginPage> {
                       }
                       auth.signOut();
                     },
-                    child: Text("Login"),
+                    child: Text("Sign in"),
                   ),
                   Center(
                     child: Column(
                       children: [
-                        Text("Or login with"),
+                        Text("Or sign in with"),
                         Center(
                           child: IconButton(
                             onPressed: () async {
@@ -189,7 +189,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: .center,
                           children: [
                             Text("Don't have an account?"),
                             TextButton(
@@ -198,7 +198,7 @@ class _LoginPageState extends State<LoginPage> {
                                   context,
                                 ).pushReplacementNamed("/register");
                               },
-                              child: Text("Sign Up"),
+                              child: Text(" Sign up"),
                             ),
                           ],
                         ),
