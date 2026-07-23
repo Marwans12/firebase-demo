@@ -116,6 +116,7 @@ class _LoginPageState extends State<LoginPage> {
                         );
                         loadingOverlay.remove();
                         loadingOverlay.dispose();
+                        pushReplacementNamed("/home");
                       } on FirebaseAuthException catch (e) {
                         showSnackBar(
                           SnackBar(content: Text("Error: ${e.code}")),
@@ -124,22 +125,6 @@ class _LoginPageState extends State<LoginPage> {
                         loadingOverlay.dispose();
                         return;
                       }
-                      if (auth.currentUser!.emailVerified) {
-                        pushReplacementNamed("/home");
-                        return;
-                      }
-                      var isUserVerified = await showDialog<bool>(
-                        // ignore: use_build_context_synchronously
-                        context: context,
-                        builder: (context) {
-                          return UserNotVerifiedDialog();
-                        },
-                      );
-                      if (isUserVerified == true) {
-                        pushReplacementNamed("/home");
-                        return;
-                      }
-                      auth.signOut();
                     },
                     child: Text("Sign in"),
                   ),
@@ -355,7 +340,6 @@ class _PasswordResetDialogState extends State<PasswordResetDialog> {
 
   @override
   Widget build(BuildContext context) {
-    
     return AlertDialog(
       // backgroundColor: Colors.white,
       title: Text("Password Recovery"),

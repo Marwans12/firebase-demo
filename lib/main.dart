@@ -1,7 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:note_app/debug/debug_app.dart';
+import 'package:note_app/home_page.dart';
 import 'package:note_app/login_page.dart';
 import 'package:note_app/routes.dart';
 
@@ -18,8 +20,12 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     var mainColor = Colors.orange;
     var theme = ThemeData(
-      progressIndicatorTheme: ProgressIndicatorThemeData(color: Colors.orange, ),
-      textSelectionTheme: TextSelectionThemeData(cursorColor: mainColor, selectionColor: const Color.fromARGB(255, 255, 184, 78), selectionHandleColor: mainColor),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: Colors.orange),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: mainColor,
+        selectionColor: const Color.fromARGB(255, 255, 184, 78),
+        selectionHandleColor: mainColor,
+      ),
       appBarTheme: AppBarThemeData(backgroundColor: mainColor),
       dialogTheme: DialogThemeData(backgroundColor: Colors.white),
       textTheme: TextTheme(
@@ -37,9 +43,7 @@ class MainApp extends StatelessWidget {
         contentPadding: EdgeInsets.symmetric(horizontal: 16),
       ),
       filledButtonTheme: FilledButtonThemeData(
-        style: ButtonStyle(
-          backgroundColor: WidgetStatePropertyAll(mainColor),
-        ),
+        style: ButtonStyle(backgroundColor: WidgetStatePropertyAll(mainColor)),
       ),
       textButtonTheme: TextButtonThemeData(
         style: ButtonStyle(
@@ -49,10 +53,12 @@ class MainApp extends StatelessWidget {
             }
             return mainColor;
           }),
+          minimumSize: WidgetStatePropertyAll(Size.zero),
           padding: WidgetStatePropertyAll(EdgeInsets.all(0)),
         ),
       ),
     );
-    return MaterialApp(theme: theme, home: LoginPage(), routes: routes);
+    
+    return MaterialApp(theme: theme, home: FirebaseAuth.instance.currentUser == null? LoginPage() : HomePage(), routes: routes);
   }
 }
