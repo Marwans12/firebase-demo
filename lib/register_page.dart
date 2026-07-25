@@ -130,22 +130,6 @@ class _RegisterPageState extends State<RegisterPage> {
                         loadingOverlay.remove();
                         loadingOverlay.dispose();
                       }
-                      // if (auth.currentUser!.emailVerified) {
-                      //   pushReplacementNamed("/home");
-                      //   return;
-                      // }
-                      // var isUserVerified = await showDialog<bool>(
-                      //   // ignore: use_build_context_synchronously
-                      //   context: context,
-                      //   builder: (context) {
-                      //     return UserNotVerifiedDialog();
-                      //   },
-                      // );
-                      // if (isUserVerified == true) {
-                      //   pushReplacementNamed("/home");
-                      //   return;
-                      // }
-                      // auth.signOut();
                     },
                     child: Text("Sign Up"),
                   ),

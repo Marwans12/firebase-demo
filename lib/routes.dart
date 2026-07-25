@@ -1,4 +1,3 @@
-import "package:flutter/material.dart";
 import "package:note_app/home_page.dart";
 import "package:note_app/login_page.dart";
 import "package:note_app/register_page.dart";
