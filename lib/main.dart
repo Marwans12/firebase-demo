@@ -18,15 +18,13 @@ class MainApp extends StatelessWidget {
   const MainApp({super.key});
   @override
   Widget build(BuildContext context) {
-    var mainColor = Colors.orange;
+    var primaryColor = Colors.orange;
     var theme = ThemeData(
-      progressIndicatorTheme: ProgressIndicatorThemeData(color: Colors.orange),
+      colorScheme: ThemeData().colorScheme.copyWith(primary: primaryColor,),
       textSelectionTheme: TextSelectionThemeData(
-        cursorColor: mainColor,
         selectionColor: const Color.fromARGB(255, 255, 184, 78),
-        selectionHandleColor: mainColor,
       ),
-      appBarTheme: AppBarThemeData(backgroundColor: mainColor),
+      appBarTheme: AppBarThemeData(backgroundColor: primaryColor),
       dialogTheme: DialogThemeData(backgroundColor: Colors.white),
       textTheme: TextTheme(
         titleLarge: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
@@ -42,17 +40,8 @@ class MainApp extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(180)),
         contentPadding: EdgeInsets.symmetric(horizontal: 16),
       ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: ButtonStyle(backgroundColor: WidgetStatePropertyAll(mainColor)),
-      ),
       textButtonTheme: TextButtonThemeData(
         style: ButtonStyle(
-          foregroundColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.disabled)) {
-              return null;
-            }
-            return mainColor;
-          }),
           minimumSize: WidgetStatePropertyAll(Size.zero),
           padding: WidgetStatePropertyAll(EdgeInsets.all(0)),
         ),
