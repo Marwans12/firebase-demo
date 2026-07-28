@@ -20,11 +20,17 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     var primaryColor = Colors.orange;
     var theme = ThemeData(
-      colorScheme: ThemeData().colorScheme.copyWith(primary: primaryColor,),
+      colorScheme: ThemeData().colorScheme.copyWith(
+        primary: primaryColor,
+        onPrimary: Colors.white,
+      ),
       textSelectionTheme: TextSelectionThemeData(
         selectionColor: const Color.fromARGB(255, 255, 184, 78),
       ),
-      appBarTheme: AppBarThemeData(backgroundColor: primaryColor),
+      appBarTheme: AppBarThemeData(
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
+      ),
       dialogTheme: DialogThemeData(backgroundColor: Colors.white),
       textTheme: TextTheme(
         titleLarge: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
@@ -40,6 +46,12 @@ class MainApp extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(180)),
         contentPadding: EdgeInsets.symmetric(horizontal: 16),
       ),
+      scrollbarTheme: ScrollbarThemeData(thumbVisibility: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return null;
+        }
+        return true;
+      })),
       textButtonTheme: TextButtonThemeData(
         style: ButtonStyle(
           minimumSize: WidgetStatePropertyAll(Size.zero),
@@ -47,7 +59,13 @@ class MainApp extends StatelessWidget {
         ),
       ),
     );
-    
-    return MaterialApp(theme: theme, home: FirebaseAuth.instance.currentUser == null? LoginPage() : HomePage(), routes: routes);
+
+    return MaterialApp(
+      theme: theme,
+      home: FirebaseAuth.instance.currentUser == null
+          ? LoginPage()
+          : HomePage(),
+      routes: routes,
+    );
   }
 }
