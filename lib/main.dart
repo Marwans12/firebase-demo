@@ -19,17 +19,19 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var primaryColor = Colors.orange;
+    var foregroundColor = Colors.white;
     var theme = ThemeData(
       colorScheme: ThemeData().colorScheme.copyWith(
         primary: primaryColor,
         onPrimary: Colors.white,
       ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(foregroundColor: foregroundColor, backgroundColor: primaryColor),
       textSelectionTheme: TextSelectionThemeData(
         selectionColor: const Color.fromARGB(255, 255, 184, 78),
       ),
       appBarTheme: AppBarThemeData(
         backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: foregroundColor,
       ),
       dialogTheme: DialogThemeData(backgroundColor: Colors.white),
       textTheme: TextTheme(

@@ -1,5 +1,6 @@
 import "dart:async";
 
+import "package:cloud_firestore/cloud_firestore.dart";
 import "package:firebase_auth/firebase_auth.dart";
 import "package:flutter/material.dart";
 import "package:flutter/scheduler.dart";
@@ -15,15 +16,29 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final auth = FirebaseAuth.instance;
   final currentUser = FirebaseAuth.instance.currentUser as User;
-  final scrollController = ScrollController();
+  late final dbHomeReference = FirebaseFirestore.instance.doc(
+    "dummyUsers/${currentUser.uid}/",
+  );
+  late final categoriesReference = dbHomeReference.collection("categories");
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? streamSubscription;
+  var categories = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+  final categoryNameController = TextEditingController();
+
   @override
   void initState() {
+    super.initState();
     if (!currentUser.emailVerified) {
       SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
         handleUserVerification(context);
       });
+    } else {
+      streamSubscription = categoriesReference.snapshots().listen((event) {
+        setState(() {
+          print("state set");
+          categories = event.docs;
+        });
+      });
     }
-    super.initState();
   }
 
   Future<void> handleUserVerification(BuildContext context) async {
@@ -38,25 +53,40 @@ class _HomePageState extends State<HomePage> {
     if (dialogueResult != true) {
       auth.signOut();
       if (context.mounted) Navigator.of(context).pushReplacementNamed("/login");
+      return;
     }
   }
 
   @override
+  void dispose() {
+    streamSubscription?.cancel();
+    categoryNameController.dispose();
+    super.dispose();
+
+  }
+
+  
+
+  @override
   Widget build(BuildContext context) {
-    var list = [
-      "adsf",
-      "adfag",
-      "adsfk",
-      "adsf",
-      "adfag",
-      "adsfk",
-      "adsf",
-      "adfag",
-      "adsfk",
-    ];
-    double height = 220;
     return Scaffold(
-      appBar: AppBar(title: Text("Home Directory")),
+      appBar: AppBar(title: Text("Categories")),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          categoryNameController.text = DateTime.now().toString();
+          final formKey = GlobalKey<FormState>();
+          var isCreated = await showDialog<bool>(
+            context: context,
+            builder: (context) {
+              return NewCategoryDialogue(formKey: formKey, controller: categoryNameController, categories: categories,);
+            },
+          );
+          if(isCreated == true) {
+            categoriesReference.add({"name": categoryNameController.text.toLowerCase(),});
+          }
+        },
+        child: Icon(Icons.add),
+      ),
       drawer: Drawer(
         child: ListView(
           children: [
@@ -79,98 +109,78 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Scrollbar(
         child: ListView(
-          controller: scrollController,
-          children: [
-            // SizedBox(
-            //   height: height,
-            //   child: GridView.count(
-            //     mainAxisSpacing: 10,
-            //     childAspectRatio: 0.75,
-            //     crossAxisCount: 2,
-            //     scrollDirection: .horizontal,
-            //     children: [
-            //       ...list.map((elem) {
-            //         return CollectionCard(text: elem);
-            //       }),
-            //     ],
-            //   ),
-            // ),
-            SizedBox(
-              height: height,
-              child: Scrollbar(
-                thumbVisibility: true,
-                scrollbarOrientation: .left,
-                child: ListView(
-                  controller: scrollController,
-                  children: [
-                    ...list.map((elem) {
-                      return CollectionListTile(text: elem);
-                    }),
-                  ],
-                ),
+          children: List.generate(categories.length, (index) {
+            var category = categories[index];
+            return ListTile(
+              onTap: () => Navigator.of(context).pushNamed("/notelisting"),
+              leading: Image.asset("assets/collection_icon.png"),
+              title: Text(category.get("name"), maxLines: 2, overflow: .ellipsis,),
+              trailing: IconButton(
+                onPressed: () => category.reference.delete(),
+                icon: Icon(Icons.delete),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: Divider(height: 4,),
-            )
-            ,
-            ...list.map((elem) {
-              return ListTile(title: Text(elem));
-            }),
-          ],
+            );
+          }),
         ),
       ),
     );
   }
 }
 
-class CollectionCard extends StatelessWidget {
-  const CollectionCard({super.key, required this.text});
-  final String text;
-  final double size = 30;
+class NewCategoryDialogue extends StatelessWidget {
+  const NewCategoryDialogue({
+    super.key,
+    required this.formKey,
+    required this.controller,
+    required this.categories,
+  });
+
+  final GlobalKey<FormState> formKey;
+  final TextEditingController controller;
+  final List<QueryDocumentSnapshot<Map<String, dynamic>>> categories;
+
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {},
-      child: Column(
+    var navigator = Navigator.of(context);
+    return AlertDialog(
+      title: Text("Create New Category"),
+      content: Column(
+        mainAxisSize: .min,
         children: [
-          SizedBox(
-            height: size,
-            width: size,
-            child: Image.asset("assets/collection_icon.png"),
-          ),
-          SingleChildScrollView(
-            child: Text(
-              "adsfsf afsd 32r2r 323fadsfsf afsd 32r2r 323f ",
-              maxLines: 2,
+          Align(alignment: .centerLeft, child: Text("Category Name")),
+          SizedBox(height: 5, width: .maxFinite,),
+          Form(
+            key: formKey,
+            child: TextFormField(
+              controller: controller,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return "Name Can't be empty";
+                }
+                for (var category in categories) {
+                  if (value == category.get("name")) {
+                    return "Category already exists";
+                  }
+                }
+                return null;
+              },
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class CollectionListTile extends StatelessWidget {
-  const CollectionListTile({super.key, required this.text});
-  final String text;
-  final double size = 40;
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ListTile(
-          leading: SizedBox(
-            height: size,
-            width: size,
-            child: Image.asset("assets/collection_icon.png"),
-          ),
-          title: Text("adsfsf afsd 32r2r 323fadsfsf afsd 32r2r 323f "),
+      actions: [
+        TextButton(
+          onPressed: () {
+            if (formKey.currentState!.validate()) {
+              navigator.pop(true);
+            }
+          },
+          child: Text("Create"),
         ),
-        // SingleChildScrollView(
-        //   child: Text("adsfsf afsd 32r2r 323fadsfsf afsd 32r2r 323f ",maxLines: 2,),
-        // ),
+        TextButton(
+          onPressed: () => navigator.pop(),
+          child: Text("Cancel"),
+        ),
       ],
     );
   }
