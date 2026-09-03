@@ -24,6 +24,7 @@ class MainApp extends StatelessWidget {
       colorScheme: ThemeData().colorScheme.copyWith(
         primary: primaryColor,
         onPrimary: Colors.white,
+        surfaceContainer: Colors.white
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(foregroundColor: foregroundColor, backgroundColor: primaryColor),
       textSelectionTheme: TextSelectionThemeData(

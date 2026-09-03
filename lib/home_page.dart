@@ -5,6 +5,7 @@ import "package:firebase_auth/firebase_auth.dart";
 import "package:flutter/material.dart";
 import "package:flutter/scheduler.dart";
 import "package:note_app/components/shared.dart";
+import "package:note_app/notes_listing_page.dart";
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -34,7 +35,6 @@ class _HomePageState extends State<HomePage> {
     } else {
       streamSubscription = categoriesReference.snapshots().listen((event) {
         setState(() {
-          print("state set");
           categories = event.docs;
         });
       });
@@ -62,10 +62,7 @@ class _HomePageState extends State<HomePage> {
     streamSubscription?.cancel();
     categoryNameController.dispose();
     super.dispose();
-
   }
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -78,16 +75,22 @@ class _HomePageState extends State<HomePage> {
           var isCreated = await showDialog<bool>(
             context: context,
             builder: (context) {
-              return NewCategoryDialogue(formKey: formKey, controller: categoryNameController, categories: categories,);
+              return NewCategoryDialogue(
+                formKey: formKey,
+                controller: categoryNameController,
+                categories: categories,
+              );
             },
           );
-          if(isCreated == true) {
-            categoriesReference.add({"name": categoryNameController.text.toLowerCase(),});
+          if (isCreated == true) {
+            categoriesReference.add({
+              "name": categoryNameController.text.toLowerCase(),
+            });
           }
         },
         child: Icon(Icons.add),
       ),
-      drawer: Drawer(
+      endDrawer: Drawer(
         child: ListView(
           children: [
             UserAccountsDrawerHeader(
@@ -112,9 +115,21 @@ class _HomePageState extends State<HomePage> {
           children: List.generate(categories.length, (index) {
             var category = categories[index];
             return ListTile(
-              onTap: () => Navigator.of(context).pushNamed("/notelisting"),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => NotesListing(
+                    categorySnapshot: category,
+                  ),
+                ),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 8),
+      
               leading: Image.asset("assets/collection_icon.png"),
-              title: Text(category.get("name"), maxLines: 2, overflow: .ellipsis,),
+              title: Text(
+                category.get("name"),
+                maxLines: 2,
+                overflow: .ellipsis,
+              ),
               trailing: IconButton(
                 onPressed: () => category.reference.delete(),
                 icon: Icon(Icons.delete),
@@ -148,7 +163,7 @@ class NewCategoryDialogue extends StatelessWidget {
         mainAxisSize: .min,
         children: [
           Align(alignment: .centerLeft, child: Text("Category Name")),
-          SizedBox(height: 5, width: .maxFinite,),
+          SizedBox(height: 5, width: .maxFinite),
           Form(
             key: formKey,
             child: TextFormField(
@@ -177,10 +192,7 @@ class NewCategoryDialogue extends StatelessWidget {
           },
           child: Text("Create"),
         ),
-        TextButton(
-          onPressed: () => navigator.pop(),
-          child: Text("Cancel"),
-        ),
+        TextButton(onPressed: () => navigator.pop(), child: Text("Cancel")),
       ],
     );
   }
