@@ -2,25 +2,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:note_app/debug/debug_app.dart';
-import 'package:note_app/home_page.dart';
-import 'package:note_app/login_page.dart';
-import 'package:note_app/routes.dart';
+import 'home_page.dart';
+import 'login_page.dart';
+import 'routes.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GoogleSignIn.instance.initialize();
   await Firebase.initializeApp();
-  runApp(const MainApp());
+  runApp( MainApp());
 }
 
 class MainApp extends StatelessWidget {
-  const MainApp({super.key});
-  @override
-  Widget build(BuildContext context) {
-    var primaryColor = Colors.orange;
-    var foregroundColor = Colors.white;
-    var theme = ThemeData(
+  MainApp({super.key});
+  final primaryColor = Colors.orange;
+  final foregroundColor = Colors.white;
+  late final theme = ThemeData(
       colorScheme: ThemeData().colorScheme.copyWith(
         primary: primaryColor,
         onPrimary: Colors.white,
@@ -62,7 +59,8 @@ class MainApp extends StatelessWidget {
         ),
       ),
     );
-
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp(
       theme: theme,
       home: FirebaseAuth.instance.currentUser == null

@@ -3,13 +3,19 @@ import "dart:async";
 import "package:cloud_firestore/cloud_firestore.dart";
 import "package:firebase_auth/firebase_auth.dart";
 import "package:flutter/material.dart";
-import "package:note_app/note_page.dart";
-
+import "components/shared.dart";
+import "note_page.dart";
+import "models.dart";
 
 class NotesListing extends StatefulWidget {
-  const NotesListing({super.key, required this.categorySnapshot});
+  const NotesListing({
+    super.key,
+    required this.category,
+    required this.categoryReference,
+  });
 
-  final QueryDocumentSnapshot<Map<String, dynamic>> categorySnapshot;
+  final Category category;
+  final DocumentReference<Category> categoryReference;
   @override
   State<NotesListing> createState() => _NotesListingState();
 }
@@ -17,27 +23,53 @@ class NotesListing extends StatefulWidget {
 class _NotesListingState extends State<NotesListing> {
   final auth = FirebaseAuth.instance;
   final currentUser = FirebaseAuth.instance.currentUser as User;
-  late final categoryName = widget.categorySnapshot.get("name");
-  late final docsReference = widget.categorySnapshot.reference.collection(
-    "docs",
-  );
-  late final StreamSubscription<QuerySnapshot<Map<String, dynamic>>>
-  streamSubscription;
-  var notes = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+  final noteNameController = TextEditingController();
+  late final categoryName = widget.category.name;
+  late final notesCollectionReference = widget.categoryReference
+      .collection("notes")
+      .withConverter(
+        fromFirestore: Note.fromFirestore,
+        toFirestore: (note, _) => note.toFirestore(),
+      );
+  late final notesManager = NotesCollectionManager(notesCollectionReference);
+  StreamSubscription<QuerySnapshot<Note>>? streamSubscription;
+  var isFetching = false;
 
   @override
   void initState() {
     super.initState();
-    streamSubscription = docsReference.snapshots().listen((event) {
+    () async {
       setState(() {
-        notes = event.docs;
+        isFetching = true;
       });
-    });
+      //TODO: implement loading from stream
+      streamSubscription = notesCollectionReference.snapshots().listen((
+        snapshot,
+      ) {
+        for (var docChange in snapshot.docChanges) {
+          var category = docChange.doc.data()!;
+          if (docChange.type == DocumentChangeType.added) {
+            notesManager.addIncoming(category, docChange.doc.reference);
+          } else if (docChange.type == DocumentChangeType.removed) {
+            notesManager.deleteIncoming(category);
+          } else if (docChange.type == DocumentChangeType.modified) {
+            notesManager.updateIncoming(category);
+          }
+        }
+        setState(() {
+          // notesManager.docs is updated
+        });
+      });
+      setState(() {
+        isFetching = false;
+      });
+    }();
   }
 
   @override
   void dispose() {
-    streamSubscription.cancel();
+    streamSubscription?.cancel();
+    noteNameController.dispose();
     super.dispose();
   }
 
@@ -48,15 +80,31 @@ class _NotesListingState extends State<NotesListing> {
       appBar: AppBar(title: Text(categoryName)),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          showDialog<bool>(
+          final formKey = GlobalKey<FormState>();
+          noteNameController.text = DateTime.now().toString().split(".")[0];
+          var isCreated = await showDialog<bool>(
             context: context,
             builder: (context) {
-              return NewNoteDialogue(
-                notes: notes,
-                category: widget.categorySnapshot,
+              return _NewNoteDialogue(
+                notes: notesManager.docs,
+                controller: noteNameController,
+                formKey: formKey,
               );
             },
           );
+          if (isCreated == true) {
+            var note = Note(
+              title: noteNameController.text,
+              categoryID: widget.category.id!,
+            );
+            notesManager.add(note);
+            navigator.push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    NotePage(note: note, notesManager: notesManager),
+              ),
+            );
+          }
         },
         child: Icon(Icons.add),
       ),
@@ -77,75 +125,77 @@ class _NotesListingState extends State<NotesListing> {
               },
               child: Text("Sign out"),
             ),
+            TextButton(
+              onPressed: () async {
+                await notesManager.resyncDocs();
+                setState(() {
+                  // notesManager.resyncDocs() -> notesManager.docs
+                });
+              },
+              child: Text("Debug sync Entries."),
+            ),
           ],
         ),
       ),
-      body: Scrollbar(
-        child: ListView(
-          children: List.generate(notes.length, (index) {
-            var note = notes[index];
-            return ListTile(
-              onTap: () => navigator.push(
-                MaterialPageRoute(builder: (context) => NotePage(note: note)),
-              ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 8),
-              leading: Image.asset("assets/note_icon.png"),
-              title: Text(note.get("name"),  overflow: .ellipsis, style: TextStyle(fontSize: 14)),
-              subtitle: Text(note.get("content"), maxLines: 1,overflow: .fade,),
-              trailing: IconButton(
-                onPressed: () async {
-                  var isConfirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (context) {
-                      return ConfirmNoteDeletionDialog(note: note);
-                    },
+      body: isFetching
+          ? Center(child: CircularProgressIndicator())
+          : Scrollbar(
+              child: ListView(
+                children: List.generate(notesManager.docs.length, (index) {
+                  var note = notesManager.docs[index];
+                  return ListTile(
+                    onTap: () => navigator.push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            NotePage(note: note, notesManager: notesManager),
+                      ),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                    leading: Image.asset("assets/note_icon.png"),
+                    title: Text(
+                      note.title,
+                      overflow: .ellipsis,
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    subtitle: Text(
+                      note.content,
+                      maxLines: 1,
+                      overflow: .ellipsis,
+                    ),
+                    trailing: IconButton(
+                      onPressed: () async {
+                        var isConfirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) {
+                            return ConfirmDocDeletionDialog(
+                              deletedName: note.title,
+                            );
+                          },
+                        );
+                        if (isConfirmed == true) {
+                          notesManager.delete(note);
+                        }
+                      },
+                      icon: Icon(Icons.delete),
+                    ),
                   );
-                  if (isConfirmed == true) {
-                    note.reference.delete();
-                  }
-                },
-                icon: Icon(Icons.delete),
+                }),
               ),
-            );
-          }),
-        ),
-      ),
+            ),
     );
   }
 }
 
-class NewNoteDialogue extends StatefulWidget {
-  const NewNoteDialogue({
-    super.key,
+class _NewNoteDialogue extends StatelessWidget {
+  const _NewNoteDialogue({
+    required this.formKey,
+    required this.controller,
     required this.notes,
-    required this.category,
   });
 
-  final QueryDocumentSnapshot<Map<String, dynamic>> category;
-  final List<QueryDocumentSnapshot<Map<String, dynamic>>> notes;
-
-  @override
-  State<NewNoteDialogue> createState() => _NewNoteDialogueState();
-}
-
-class _NewNoteDialogueState extends State<NewNoteDialogue> {
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final TextEditingController controller = TextEditingController();
-  late final categoryName = widget.category.get("name");
-  late final CollectionReference<Map<String, dynamic>> docsReference =
-      widget.category.reference.collection("docs");
-
-  @override
-  void initState() {
-    controller.text = DateTime.now().toString().split(".")[0];
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
+  final GlobalKey<FormState> formKey;
+  final TextEditingController controller;
+  final List<Note> notes;
 
   @override
   Widget build(BuildContext context) {
@@ -155,7 +205,7 @@ class _NewNoteDialogueState extends State<NewNoteDialogue> {
       content: Column(
         mainAxisSize: .min,
         children: [
-          Align(alignment: .centerLeft, child: Text("Note Name")),
+          Align(alignment: .centerLeft, child: Text("Note title")),
           SizedBox(height: 5, width: .maxFinite),
           Form(
             key: formKey,
@@ -163,10 +213,10 @@ class _NewNoteDialogueState extends State<NewNoteDialogue> {
               controller: controller,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return "Name Can't be empty";
+                  return "Title Can't be empty";
                 }
-                for (var note in widget.notes) {
-                  if (value == note.get("name")) {
+                for (var note in notes) {
+                  if (value.toLowerCase() == note.title.toLowerCase()) {
                     return "Note already exists";
                   }
                 }
@@ -178,18 +228,9 @@ class _NewNoteDialogueState extends State<NewNoteDialogue> {
       ),
       actions: [
         TextButton(
-          onPressed: () async {
+          onPressed: () {
             if (formKey.currentState!.validate()) {
-              var note = await (await docsReference.add({
-                "name": controller.text.toLowerCase(),
-                "category": categoryName,
-                "content": "",
-              })).get();
-              if (context.mounted) {
-                navigator.pushReplacement(
-                  MaterialPageRoute(builder: (context) => NotePage(note: note)),
-                );
-              }
+              navigator.pop(true);
             }
           },
           child: Text("Create"),

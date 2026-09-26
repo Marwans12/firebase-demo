@@ -4,8 +4,9 @@ import "package:cloud_firestore/cloud_firestore.dart";
 import "package:firebase_auth/firebase_auth.dart";
 import "package:flutter/material.dart";
 import "package:flutter/scheduler.dart";
-import "package:note_app/components/shared.dart";
-import "package:note_app/notes_listing_page.dart";
+import "components/shared.dart";
+import "models.dart";
+import "notes_listing_page.dart";
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,13 +18,21 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final auth = FirebaseAuth.instance;
   final currentUser = FirebaseAuth.instance.currentUser as User;
-  late final dbHomeReference = FirebaseFirestore.instance.doc(
+  final categoryNameController = TextEditingController();
+  late final userIDDocReference = FirebaseFirestore.instance.doc(
     "dummyUsers/${currentUser.uid}/",
   );
-  late final categoriesReference = dbHomeReference.collection("categories");
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? streamSubscription;
-  var categories = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
-  final categoryNameController = TextEditingController();
+  late final categoriesCollectionReference = userIDDocReference
+      .collection("folders")
+      .withConverter(
+        fromFirestore: Category.fromFirestore,
+        toFirestore: (category, _) => category.toFirestore(),
+      );
+  late final categoryManager = CategoryCollectionManager(
+    categoriesCollectionReference,
+  );
+  StreamSubscription<QuerySnapshot<Category>>? streamSubscription;
+  var isFetching = false;
 
   @override
   void initState() {
@@ -33,11 +42,69 @@ class _HomePageState extends State<HomePage> {
         handleUserVerification(context);
       });
     } else {
-      streamSubscription = categoriesReference.snapshots().listen((event) {
+      () async {
         setState(() {
-          categories = event.docs;
+          isFetching = true;
         });
-      });
+        if ((await userIDDocReference.get()).exists == false) {
+          var batch = FirebaseFirestore.instance.batch();
+          var defaultCategoryRef = categoriesCollectionReference.doc();
+          var defaultNoteRef = defaultCategoryRef
+              .collection("notes")
+              .withConverter(
+                fromFirestore: Note.fromFirestore,
+                toFirestore: (note, _) => note.toFirestore(),
+              )
+              .doc();
+          batch.set(userIDDocReference, {
+            "id": userIDDocReference.id,
+            "uid": currentUser.uid,
+            "email": currentUser.email,
+          });
+          batch.set<Category>(
+            defaultCategoryRef,
+            Category(
+              id: defaultCategoryRef.id,
+              name: "My Notes",
+              creationTime: DateTime.now(),
+              lastEditedTime: DateTime.now(),
+            ),
+          );
+          batch.set<Note>(
+            defaultNoteRef,
+            Note(
+              id: defaultNoteRef.id,
+              title: "Welcome",
+              content: "Welcome to your personal app for taking notes...",
+              categoryID: defaultCategoryRef.id,
+              creationTime: DateTime.now(),
+              lastEditedTime: DateTime.now(),
+            ),
+          );
+          await batch.commit();
+        }
+        //TODO: Implement loading from stream
+        streamSubscription = categoriesCollectionReference.snapshots().listen((
+          snapshot,
+        ) {
+          for (var docChange in snapshot.docChanges) {
+            var category = docChange.doc.data()!;
+            if (docChange.type == DocumentChangeType.added) {
+              categoryManager.addIncoming(category, docChange.doc.reference);
+            } else if (docChange.type == DocumentChangeType.removed) {
+              categoryManager.deleteIncoming(category);
+            } else if (docChange.type == DocumentChangeType.modified) {
+              categoryManager.updateIncoming(category);
+            }
+          }
+          setState(() {
+            //categoryManager
+          });
+        });
+        setState(() {
+          isFetching = false;
+        });
+      }();
     }
   }
 
@@ -47,7 +114,7 @@ class _HomePageState extends State<HomePage> {
     dialogueResult = await showDialog<bool>(
       context: context,
       builder: (context) {
-        return UserNotVerifiedDialog();
+        return _UserNotVerifiedDialog();
       },
     );
     if (dialogueResult != true) {
@@ -67,25 +134,24 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Categories")),
+      appBar: AppBar(title: Text("Folders")),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          categoryNameController.text = DateTime.now().toString();
+          categoryNameController.text = DateTime.now().toString().split(".")[0];
           final formKey = GlobalKey<FormState>();
           var isCreated = await showDialog<bool>(
             context: context,
             builder: (context) {
-              return NewCategoryDialogue(
+              return _NewCategoryDialogue(
                 formKey: formKey,
                 controller: categoryNameController,
-                categories: categories,
+                categories: categoryManager.docs,
               );
             },
           );
           if (isCreated == true) {
-            categoriesReference.add({
-              "name": categoryNameController.text.toLowerCase(),
-            });
+            var category = Category(name: categoryNameController.text);
+            categoryManager.add(category);
           }
         },
         child: Icon(Icons.add),
@@ -107,44 +173,56 @@ class _HomePageState extends State<HomePage> {
               },
               child: Text("Sign out"),
             ),
+            TextButton(
+              onPressed: () async {
+                await categoryManager.resyncDocs();
+                setState(() {//categoryManager
+                });
+              },
+              child: Text("Debug sync Entries."),
+            ),
           ],
         ),
       ),
-      body: Scrollbar(
-        child: ListView(
-          children: List.generate(categories.length, (index) {
-            var category = categories[index];
-            return ListTile(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => NotesListing(
-                    categorySnapshot: category,
-                  ),
-                ),
+      body: isFetching
+          ? Center(child: CircularProgressIndicator())
+          : Scrollbar(
+              child: ListView(
+                children: List.generate(categoryManager.docs.length, (index) {
+                  var category = categoryManager.docs[index];
+                  var categoryReference =
+                      categoryManager.docsReferences[category]!;
+                  return ListTile(
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => NotesListing(
+                          category: category,
+                          categoryReference: categoryReference,
+                        ),
+                      ),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
+
+                    leading: Image.asset("assets/collection_icon.png"),
+                    title: Text(
+                      category.name,
+                      maxLines: 2,
+                      overflow: .ellipsis,
+                    ),
+                    trailing: IconButton(
+                      onPressed: () => categoryManager.delete(category),
+                      icon: Icon(Icons.delete),
+                    ),
+                  );
+                }),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 8),
-      
-              leading: Image.asset("assets/collection_icon.png"),
-              title: Text(
-                category.get("name"),
-                maxLines: 2,
-                overflow: .ellipsis,
-              ),
-              trailing: IconButton(
-                onPressed: () => category.reference.delete(),
-                icon: Icon(Icons.delete),
-              ),
-            );
-          }),
-        ),
-      ),
+            ),
     );
   }
 }
 
-class NewCategoryDialogue extends StatelessWidget {
-  const NewCategoryDialogue({
-    super.key,
+class _NewCategoryDialogue extends StatelessWidget {
+  const _NewCategoryDialogue({
     required this.formKey,
     required this.controller,
     required this.categories,
@@ -152,17 +230,17 @@ class NewCategoryDialogue extends StatelessWidget {
 
   final GlobalKey<FormState> formKey;
   final TextEditingController controller;
-  final List<QueryDocumentSnapshot<Map<String, dynamic>>> categories;
+  final List<Category> categories;
 
   @override
   Widget build(BuildContext context) {
     var navigator = Navigator.of(context);
     return AlertDialog(
-      title: Text("Create New Category"),
+      title: Text("Create New Folder"),
       content: Column(
         mainAxisSize: .min,
         children: [
-          Align(alignment: .centerLeft, child: Text("Category Name")),
+          Align(alignment: .centerLeft, child: Text("Folder Name")),
           SizedBox(height: 5, width: .maxFinite),
           Form(
             key: formKey,
@@ -173,8 +251,8 @@ class NewCategoryDialogue extends StatelessWidget {
                   return "Name Can't be empty";
                 }
                 for (var category in categories) {
-                  if (value == category.get("name")) {
-                    return "Category already exists";
+                  if (value.toLowerCase() == category.name.toLowerCase()) {
+                    return "Folder already exists";
                   }
                 }
                 return null;
@@ -198,8 +276,8 @@ class NewCategoryDialogue extends StatelessWidget {
   }
 }
 
-class UserNotVerifiedDialog extends StatelessWidget {
-  const UserNotVerifiedDialog({super.key});
+class _UserNotVerifiedDialog extends StatelessWidget {
+  const _UserNotVerifiedDialog();
 
   @override
   Widget build(BuildContext context) {
@@ -212,7 +290,7 @@ class UserNotVerifiedDialog extends StatelessWidget {
         "Your email is not verified. Head to your email and click the verifcation link.",
       ),
       actions: [
-        TimedTextButton(
+        _TimedTextButton(
           onPressed: () async {
             var loadingOverlay = LoadingOverlay(context);
             try {
@@ -236,7 +314,7 @@ class UserNotVerifiedDialog extends StatelessWidget {
           seconds: 5,
           buttonText: "Check Status",
         ),
-        TimedTextButton(
+        _TimedTextButton(
           onPressed: () async {
             try {
               await FirebaseAuth.instance.currentUser!.sendEmailVerification();
@@ -262,9 +340,8 @@ class UserNotVerifiedDialog extends StatelessWidget {
   }
 }
 
-class TimedTextButton extends StatefulWidget {
-  const TimedTextButton({
-    super.key,
+class _TimedTextButton extends StatefulWidget {
+  const _TimedTextButton({
     required this.buttonText,
     this.onPressed,
     required this.seconds,
@@ -274,10 +351,10 @@ class TimedTextButton extends StatefulWidget {
   final String buttonText;
   final VoidCallback? onPressed;
   @override
-  State<TimedTextButton> createState() => _TimedTextButtonState();
+  State<_TimedTextButton> createState() => _TimedTextButtonState();
 }
 
-class _TimedTextButtonState extends State<TimedTextButton> {
+class _TimedTextButtonState extends State<_TimedTextButton> {
   late var buttonText = widget.buttonText;
   late var isEnabled = widget.onPressed == null ? false : true;
   late var count = widget.seconds;

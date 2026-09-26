@@ -1,10 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'components/shared.dart';
+import 'models.dart';
 
 class NotePage extends StatefulWidget {
-  const NotePage({super.key, required this.note});
-  final DocumentSnapshot<Map<String, dynamic>> note;
+  const NotePage({super.key, required this.note, required this.notesManager});
+  final Note note;
+  final NotesCollectionManager notesManager;
 
   @override
   State<NotePage> createState() => _NotePageState();
@@ -14,12 +16,11 @@ class _NotePageState extends State<NotePage> {
   final contentController = TextEditingController();
   final contentFocus = FocusNode();
   final scrollController = ScrollController();
-  late final noteReference = widget.note.reference;
   @override
   void initState() {
-    contentController.text = widget.note.get("content");
+    contentController.text = widget.note.content;
     SchedulerBinding.instance.addPostFrameCallback(
-      (timeStamp) => contentFocus.requestFocus(),
+      (_) => contentFocus.requestFocus(),
     );
     super.initState();
   }
@@ -38,14 +39,14 @@ class _NotePageState extends State<NotePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.note.get("name"),
+          widget.note.title,
           maxLines: 2,
           style: TextStyle(fontSize: 20),
         ),
         actions: [
           IconButton(
             onPressed: () async {
-              await noteReference.update({"content": contentController.text});
+              widget.notesManager.update(widget.note, newContent: contentController.text);
               if (context.mounted) {
                 navigator.pop();
               }
@@ -59,11 +60,13 @@ class _NotePageState extends State<NotePage> {
                   var isConfirmed = await showDialog<bool>(
                     context: context,
                     builder: (context) {
-                      return ConfirmNoteDeletionDialog(note: widget.note);
+                      return ConfirmDocDeletionDialog(
+                        deletedName: widget.note.title,
+                      );
                     },
                   );
                   if (isConfirmed == true) {
-                    noteReference.delete();
+                    widget.notesManager.delete(widget.note);
                     navigator.pop();
                   }
                 },
@@ -100,52 +103,6 @@ class _NotePageState extends State<NotePage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-
-
-class ConfirmNoteDeletionDialog extends StatelessWidget {
-  const ConfirmNoteDeletionDialog({
-    super.key,
-    required this.note,
-  });
-
-  final DocumentSnapshot note;
-
-  @override
-  Widget build(BuildContext context) {
-    var navigator = Navigator.of(context);
-    return AlertDialog(
-      title: Text("Confirm Deletion"),
-      content: Text(
-        "Are you sure you want to delete '${note.get("name")}'?",
-      ),
-      actions: [
-        Theme(
-          data: ThemeData(
-            colorScheme: ColorScheme.of(
-              context,
-            ).copyWith(primary: Colors.black87),
-          ),
-          child: TextButton(
-            onPressed: () => navigator.pop(),
-            child: Text("Cancel"),
-          ),
-        ),
-        Theme(
-          data: ThemeData(
-            colorScheme: ColorScheme.of(
-              context,
-            ).copyWith(primary: Colors.red),
-          ),
-          child: TextButton(
-            onPressed: () => navigator.pop(true),
-            child: Text("Delete"),
-          ),
-        ),
-      ],
     );
   }
 }
